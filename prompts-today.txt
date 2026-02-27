@@ -1,3 +1,8 @@
+NOTE: Prompts where I made Claude grill me on the plan are missing somehow and also prompts where I've researched the algos and ds. I had to use Claude Web UI in order to save time until the Mac was provisioned.
+
+
+
+
 Prompts used on Feb 27, 2026
 ========================================
 
