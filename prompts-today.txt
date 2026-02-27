@@ -1,0 +1,122 @@
+Prompts used on Feb 27, 2026
+========================================
+
+1. [07:38] /logout
+
+2. [08:43] install zsh with git autocomplete and powerlevel 10k
+
+3. [08:47] find file 'Settlement Schedule Reflow - Technical Test.pdf' and copy it here
+
+4. [08:57] make a shortcut to code in cli so I can open vscode
+
+5. [08:59] read planning/§
+
+6. [08:59] /exit
+
+7. [09:02] read planning/PLAN1.md which is the first plan iteration and grill it, compare it to Settlement Schedule Reflow - Technical Test.pdf requirements also be mindful of CONTEXT-HIGH-LEVEL.md specs. Keep in mind that I'm constrain to using the current version of node and npm, unless I find a way to install Docker (I don't have permissions on this laptop)
+
+8. [09:04] the "Bonus Features" are also to be included in the plan.
+
+9. [09:05] "Bonus Points (Extra Credit)" implementation is a must, tests will help me understand the solution
+
+10. [09:35] create a CLAUDE.md file for this project, keep in mind the new mermaid diagram that I've added in planning folder, update PLAN1.md with the new improved plan and then rename it to PLAN.md and keep a iteration number inside the file
+
+11. [09:40] figure out why claude is not working in the other terminal, can't find the binary, keep in mind that all changes must be local, probably it's because I've changed the node version. I don't have administrator access to this laptop
+
+12. [09:46] grill me, be very concise and brief, ask me questions to validate my understanding of the Settlment Schedule Reflow - System Flow. I'm validating my understanding of the project and also in parallel I want you to validate the code against the prompts. So re-review the code in parallel after you have the right answers at each stage. First, I want to understand the "Setup Phase". Let me explain what is happening focusing on the actions of the external actors. External actors are "Trade desks" (I don't know what type of companies are these, like Interactive Brokers?), Regulators - this seems clear to me, these are legal entities that can update anytime the operating hours or blackouts, and can update the compliance holds. Not sure yet what is a compliant hold. Then there are the Counterparties - my guess is that these are the guys from whom we need to settle the money later. After you grill me on this Setup Phase -> Actors, we can move on and I will write more assumptions
+
+13. [09:51] i need a mermaid viewer installed locally so I can veiw the diagram
+
+14. [09:53] open planning/settlement-reflow-diagram.mermaid
+
+15. [09:53] open planning/settlement-reflow-diagram.png
+
+16. [09:53] the problem is that it gets pixelated when I zoom
+
+17. [10:02] when the trade order arrives from the Trade Desks or Counterparties, then the Trade Order generates Settlement Tasks which are chained. So that tasks chained in serial order would be "margin check" -> "fund transfer" -> "compliance screen" -> "disbursement" -> "reconciliation". I don't understand why "fund transfer" is first and not "compliance screen", what does "disbursement" mean, does this mean that we take the money from the 3rd party? Is "reconciliation" step something where we deduce the sum taken from the 3rd party and asses if they still owe us money?
+
+18. [11:12] add to the finding the "human-in-the-loop" spotted at this step
+
+19. [11:21] /exit
+
+20. [11:24] make a plan to create a visual web client where I can simulate Trade Orders, Settlement Tasks, Settlement Channels, simulate one of the Disruptions and see how the Reflow Engine deals with it by looking at tasks being assigned on channels and put in the right time slots
+
+21. [11:27] in FINDINGS file add very briefly the structure of this project: Setup Phase, Current State, Disruption, Reflow Engine (recalculations) Phase 1/Phase 2/Phase3, Outputs and mention each algo and data structure being used
+
+22. [11:27] I would like you to separate the project into client and server having the whole folder as a monorepo using npm
+
+23. [11:28] now at each stage, mention special cases found and some exceptions
+
+24. [11:30] at the top add a high level diagram including outside systems
+
+25. [11:32] the high level diagram should be about outside system calling this "Settlement Schedule reflow" service, it should be only about Services (microservices)
+
+26. [11:34] simplify the high level diagram by showing only the titles, keep the ReflowInput -> ... -> ReflowResult explanation
+
+27. [11:39] review the ReflowResult part of the diagram
+
+28. [11:40] resume
+
+29. [11:41] review the "SETTLEMENT SCHEDULE REFLOW SERVICE" part of the diagram, make sure box edges and lines align
+
+30. [11:43] make sure you update CLAUDE.md with the new specs, but keep the DEMO-PLAYGROUND.md specs separately and reference them
+
+31. [11:43] make sure you update CLAUDE.md with the new specs, but keep the DEMO-PLAYGROUND.md specs separately and reference them
+
+32. [11:45] how do I add a visual timer in my mac os, I started at 10 AM and I need to finish in 6hrs
+
+33. [11:47] /clear
+
+34. [12:00] try running the server and playground together
+
+35. [12:04] in the demo timeline, I'd like to see marked with grey or different shades of grey the dead times, blackouts or restrictions
+
+36. [12:05] can you also add a soft text on those periods in order to understand why those time frames can't be occupied with a task
+
+37. [12:08] run the server and playground, please always consider that the playground is opened along with the server
+
+38. [12:09] please make the theme of the UI as white, because some of the text is less visible
+
+39. [12:09] enable hot reload, if possible so I don't need to refresh the browser every time there's a code change
+
+40. [12:16] make a plan to write the task type in the timeline line, under task name
+
+41. [12:21] /clear
+
+42. [12:23] in the UI, In the Scenario 1: Delay Cascade, I have selected "margiCheck" task and deplayed it with 60 minutes. The timeline did not change, I was expecting marginCheck to be delayed at 14:00. Is this according to the specifications or not? please review, think hard. The marginCheck taks is between fundTransfer and disbursment, reconciliation
+
+43. [12:30] take into the account that the UI must work based on the engine logic
+
+44. [12:32] take into the account that the UI must work based on the engine logic
+
+45. [12:35] so now it works, plan and think and re-review why on "Scenario 1: Delay Cascade" if I delay 90 min the marginCheck, it correctly delays every task after it from 14:30 onwards, but the Disbursement is showed like a continuous green timeline over the "Closed Day" or "Off-Hours" (can't tell from the colors, they are too close), and then restarting a 8 AM on next day.
+
+46. [12:49] I need to make a short presentation on the assignment work I've done, the assignement is in the pdf file in the planning folder. The presentation has to be very brief, see the requirements, I need to make a short story about understanding the assignment high level top to bottom and the algorithms and data structures involved. I need the text to be in Romanian. Write this in TRANSCRIPT-RO.md file
+
+47. [12:55] all the delays from the UI need to be saved in the current session, so if in "Scenario 1" for example, I delay marginCheck and then I delay the disbursement, they both need to be accounted for on the graph
+
+48. [13:00] in the UI timeline can't tell the difference between Off-Hours color and Closed Day clolor, please make Closed Day color much darker
+
+49. [13:03] in the Scenario 2, if I delay the fundTransfer 50 minutes, it shows on the graph that it starts at 8:00 AM on Tue, but from 8:00 - 9:00 AM is a blackout. is this just a UI problem or an engine problem?
+
+50. [13:05] insert the FIDINGS.md chapter in Romanian
+
+51. [13:09] try to make the text more briefly in non-critical areas, the "Intelegearea problemei" and "Constatari arhitecturale si Code Review" are important
+
+52. [13:12] check the pdf document with the requirements and make sure that the engine implements Data Structures from the document
+
+53. [13:42] initialize a new git repository in this folder, and let's push it to github git@github.com:serbanghita/reflow.git
+
+54. [13:45] resume, but keep only me as author
+
+55. [13:45] git remote set-url origin https://serbanghita:<TOKEN>@github.com/serbanghita/reflow.git
+
+56. [13:47] git remote set-url origin https://serbanghita:<REDACTED_TOKEN>@github.com/serbanghita/reflow.git
+
+57. [13:48] git remote set-url origin https://github.com/serbanghita/reflow.git
+
+58. [13:48] push
+
+59. [13:50] give me a list of all the prompts that I've used today and put them into prompts-today.txt
+
+60. [13:50] check ~/.claude for conversation logs
