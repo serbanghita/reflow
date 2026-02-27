@@ -1,0 +1,30 @@
+{
+  "name": "@reflow/engine",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/reflow/reflow.service.ts",
+    "./types": "./src/reflow/types.ts",
+    "./scenarios/delay-cascade": "./src/data/scenario-delay-cascade.ts",
+    "./scenarios/blackout": "./src/data/scenario-blackout.ts",
+    "./scenarios/multi-constraint": "./src/data/scenario-multi-constraint.ts",
+    "./scenarios/channel-contention": "./src/data/scenario-channel-contention.ts",
+    "./scenarios/impossible": "./src/data/scenario-impossible.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "tsx src/main.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "luxon": "3.7.2",
+    "typescript": "5.9.3"
+  },
+  "devDependencies": {
+    "@types/luxon": "3.7.1",
+    "esbuild": "0.17.19",
+    "tsx": "4.21.0",
+    "vitest": "2.1.9"
+  }
+}

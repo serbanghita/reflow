@@ -1,0 +1,213 @@
+.gantt-area {
+  grid-area: gantt;
+  overflow: auto;
+  background: var(--bg-primary);
+  position: relative;
+}
+
+.gantt-svg {
+  display: block;
+}
+
+.gantt-error-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 24px 32px;
+  text-align: center;
+  color: var(--danger);
+  font-size: 14px;
+  max-width: 400px;
+}
+
+.gantt-error-banner h3 {
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.gantt-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ─── Dead-zone backgrounds (3 distinct shades) ─── */
+
+/* Off-hours: before/after daily operating window (medium gray) */
+.off-hours-bg {
+  fill: #f1f5f9;
+  opacity: 0.9;
+}
+
+/* Full closed day: weekends / no operating slots (darkest gray) */
+.closed-day-bg {
+  fill: #cbd5e1;
+  opacity: 0.95;
+}
+
+/* Inter-slot gap: gap between operating windows on the same day (lighter gray) */
+.inter-slot-bg {
+  fill: #f8fafc;
+  opacity: 0.85;
+}
+
+/* Blackout: explicit restriction — dark background behind hatching */
+.blackout-bg {
+  fill: #fef2f2;
+  opacity: 0.9;
+}
+
+/* Blackout hatching pattern */
+.blackout-rect {
+  fill: url(#blackout-pattern);
+  opacity: 0.45;
+}
+
+/* Red accent bar at the top of blackout zones */
+.blackout-accent {
+  fill: #EF4444;
+  opacity: 0.7;
+}
+
+/* ─── Zone labels (soft text inside dead zones) ─── */
+
+.zone-label {
+  font-weight: 500;
+  pointer-events: none;
+  user-select: none;
+}
+
+.zone-label-closed {
+  font-size: 10px;
+  fill: #94a3b8;
+  letter-spacing: 0.3px;
+}
+
+.zone-label-offhours {
+  font-size: 9px;
+  fill: #94a3b8;
+  letter-spacing: 0.2px;
+}
+
+.zone-label-blackout {
+  font-size: 9px;
+  fill: #dc2626;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* ─── Legend ─── */
+
+.gantt-legend {
+  pointer-events: none;
+}
+
+.legend-label {
+  font-size: 9px;
+  fill: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ─── Task bar transitions for before/after animation ─── */
+
+.task-bar-before {
+  opacity: 0.3;
+  transition: opacity 300ms ease;
+}
+
+.task-bar-before rect {
+  stroke-dasharray: 4 2;
+}
+
+.task-bar-after rect {
+  transition: x 500ms ease-out, width 500ms ease-out;
+}
+
+.task-bar text {
+  font-size: 10px;
+  fill: white;
+  pointer-events: none;
+  user-select: none;
+}
+
+.task-bar:hover rect {
+  filter: brightness(1.2);
+}
+
+.task-bar {
+  cursor: pointer;
+}
+
+/* Dependency arrows */
+.dep-arrow {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  marker-end: url(#arrowhead);
+  opacity: 0;
+  animation: fadeIn 300ms ease forwards;
+  animation-delay: 500ms;
+}
+
+@keyframes fadeIn {
+  to { opacity: 0.6; }
+}
+
+/* SLA deadline line */
+.sla-deadline {
+  stroke: var(--danger);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 3;
+  opacity: 0.8;
+}
+
+/* Swim lane backgrounds */
+.swim-lane-bg {
+  fill: transparent;
+}
+
+.swim-lane-bg:nth-child(even) {
+  fill: rgba(255, 255, 255, 0.02);
+}
+
+.swim-lane-label {
+  font-size: 11px;
+  fill: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Time axis */
+.time-axis-label {
+  font-size: 9px;
+  fill: var(--text-muted);
+}
+
+.time-axis-day-label {
+  font-size: 10px;
+  fill: var(--text-secondary);
+  font-weight: 600;
+}
+
+.gridline {
+  stroke: var(--bg-tertiary);
+  stroke-width: 0.5;
+}
+
+.gridline-major {
+  stroke: var(--border-color);
+  stroke-width: 1;
+}
+
+/* Delay indicator */
+.delay-indicator {
+  font-size: 9px;
+  fill: var(--danger);
+  font-weight: 600;
+}

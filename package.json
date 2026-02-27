@@ -1,0 +1,16 @@
+{
+  "name": "settlement-reflow-monorepo",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "npm run dev --workspace=@reflow/server & npm run dev --workspace=@reflow/demo-playground",
+    "dev:server": "npm run dev --workspace=@reflow/server",
+    "dev:playground": "npm run dev --workspace=@reflow/demo-playground",
+    "test": "npm run test --workspace=@reflow/engine",
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start --workspace=@reflow/engine"
+  },
+  "overrides": {
+    "esbuild": "0.17.19"
+  }
+}

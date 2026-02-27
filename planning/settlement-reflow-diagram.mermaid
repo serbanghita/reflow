@@ -1,0 +1,155 @@
+---
+title: "Settlement Schedule Reflow — System Flow"
+---
+
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#e0e0e0', 'primaryBorderColor': '#4a4a6a', 'lineColor': '#6c63ff', 'secondaryColor': '#16213e', 'tertiaryColor': '#0f3460', 'fontSize': '14px', 'fontFamily': 'monospace'}}}%%
+
+flowchart TB
+    %% ─── SETUP PHASE (happens before reflow) ───
+
+    subgraph SETUP["📋 SETUP PHASE — Pre-defined, exists before reflow runs"]
+        direction TB
+
+        subgraph ACTORS_EXT["🏦 EXTERNAL ACTORS"]
+            direction LR
+            TD["📊 Trade Desks<br>─────────────<br>Execute trades (T)<br>Agree on price/quantity<br>Payment NOT yet settled"]
+            REG["⚖️ Regulators<br>─────────────<br>Define operating hours<br>Declare blackout windows<br>Require compliance holds"]
+            CP["👥 Counterparties<br>─────────────<br>Committed to pay<br>Cash/securities pending<br>until settlementDate (T+N)"]
+        end
+
+        subgraph PLATFORM["🏗️ Capital33 Platform — Decomposes trades into tasks"]
+            direction LR
+            DECOMP["Trade Order arrives<br>══════════════════<br>Platform generates a chain<br>of Settlement Tasks:<br><br>marginCheck<br>  → fundTransfer<br>    → complianceScreen<br>      → disbursement<br>        → reconciliation<br><br>Assigns each to a channel"]
+        end
+
+        subgraph STATIC_DATA["💾 CURRENT STATE (snapshot)"]
+            direction LR
+            TASKS["Settlement Tasks<br>═══════════════<br>• taskReference<br>• settlementChannelId<br>• startDate / endDate<br>• durationMinutes<br>• dependsOnTaskIds[]<br>• isRegulatoryHold<br>• taskType<br>─────────────<br>⚡ Tasks are INTERRUPTIBLE<br>Processing pauses outside<br>valid windows, resumes<br>in next available slot"]
+            CHANNELS["Settlement Channels<br>═══════════════<br>• operatingHours[]<br>  (pre-defined weekly schedule)<br>• blackoutWindows[]<br>  (pre-declared date ranges)<br>─────────────<br>📌 These are STATIC inputs<br>Already baked in before<br>reflow is called"]
+            ORDERS["Trade Orders<br>═══════════════<br>• tradeOrderNumber<br>• settlementDate (T+N)<br>  = the DEADLINE<br>─────────────<br>⏰ If tasks can't complete<br>before this date →<br>SLA BREACH"]
+        end
+
+        TD -->|"execute trade<br>(T date)"| DECOMP
+        REG -->|"operating hours<br>blackout windows<br>compliance holds"| CHANNELS
+        CP -->|"committed to pay<br>but not yet settled"| DECOMP
+        DECOMP --> TASKS
+    end
+
+    %% ─── TRIGGER ───
+
+    subgraph TRIGGER["⚡ DISRUPTION — Triggers a reflow"]
+        direction LR
+        DIS["Something goes wrong:<br>══════════════════<br>• Counterparty fund transfer late<br>• Channel goes offline<br>• New blackout window declared<br>• Unplanned maintenance<br>─────────────────<br>⬇️ Platform UPDATES the data<br>(adjusts task start, adds blackout)<br>then calls reflow with<br>CURRENT SNAPSHOT"]
+    end
+
+    %% ─── REFLOW ENGINE ───
+
+    subgraph ENGINE["⚙️ REFLOW ENGINE — Batch recalculation on current snapshot"]
+        direction TB
+
+        BATCH["🔄 BATCH RECALC MODEL<br>════════════════════════<br>NOT a real-time reactive system.<br>Reads current state → computes<br>new valid schedule for ALL<br>non-pinned tasks at once.<br>Think: spreadsheet recalc."]
+
+        subgraph PHASE1["Phase 1 — Build Dependency Graph"]
+            DAG["🔗 DAG Construction<br>═══════════════════<br>Nodes = settlement tasks<br>Edges = dependsOnTaskIds"]
+            CYCLE["🔍 Cycle Detection<br>═══════════════════<br>If cycle found → ERROR<br>'Circular dependency detected'"]
+            TOPO["📐 TOPOLOGICAL SORT<br>═══════════════════════<br>Kahn's Algorithm (BFS)<br>─────────────────────<br>1. Find tasks with 0 in-degree<br>2. Add to priority queue<br>3. Process each:<br>   • Schedule it<br>   • Decrement neighbor in-degrees<br>   • Enqueue newly 0-degree tasks<br>4. Tie-break: earlier startDate<br>─────────────────────<br>Guarantees: every task is<br>scheduled AFTER all its<br>upstream dependencies"]
+            DAG --> CYCLE --> TOPO
+        end
+
+        subgraph PHASE2["Phase 2 — Schedule Each Task (in topo order)"]
+            direction TB
+            PIN{"Is task<br>isRegulatoryHold?"}
+            SKIP["🔒 PINNED<br>Keep original dates<br>Cannot move<br>Still acts as dependency<br>source for downstream"]
+
+            EARLIEST["Compute Earliest Start<br>══════════════════<br>effectiveStart = max(<br>  • latest dep endDate ✅<br>  • channel nextAvailable ✅<br>  • next operating window open ✅<br>)<br>──────────────<br>Then snap forward past any<br>blackout windows"]
+
+            subgraph CONSTRAINTS["🚧 CONSTRAINT CHECK ORDER"]
+                direction TB
+                C1["1️⃣ Dependencies<br>──────────────<br>All upstream tasks<br>must be complete"]
+                C2["2️⃣ Channel Conflicts<br>──────────────<br>No overlapping tasks<br>on same channel"]
+                C3["3️⃣ Operating Hours<br>──────────────<br>Process only during<br>pre-defined market windows"]
+                C4["4️⃣ Blackout Windows<br>──────────────<br>Skip pre-declared<br>maintenance/regulatory blocks"]
+                C1 --> C2 --> C3 --> C4
+            end
+
+            CALC["⏱️ Calculate End Date<br>══════════════════════<br>calculateEndDateWithOperatingHours(<br>  effectiveStart,<br>  durationMinutes,<br>  operatingHours,<br>  blackoutWindows<br>)<br>──────────────────────<br>Consumes work-minutes ONLY<br>within valid operating windows.<br>Skips nights, weekends, blackouts.<br>Returns exact end timestamp."]
+
+            UPDATE["📝 Update State<br>════════════════<br>• channel.nextAvailable = endDate<br>• Record: what moved, by how much<br>• Record: WHY it moved<br>  (dep delay / conflict / blackout)"]
+
+            PIN -->|Yes| SKIP
+            PIN -->|No| EARLIEST
+            EARLIEST --> CONSTRAINTS
+            CONSTRAINTS --> CALC
+            CALC --> UPDATE
+        end
+
+        subgraph PHASE3["Phase 3 — Validate & Report"]
+            direction LR
+            VALIDATE["✅ Post-Reflow Validation<br>═══════════════════<br>Verify the output schedule:<br>• No channel overlaps<br>• All deps satisfied<br>• All work within op hours<br>• No blackout violations<br>• Regulatory holds untouched"]
+            METRICS["📊 Metrics (Bonus)<br>═══════════════════<br>• Σ total delay introduced<br>• Count of tasks affected<br>• Channel utilization %<br>• SLA breach flags<br>  (tasks missing T+N deadline)"]
+        end
+
+        BATCH --> DAG
+        TOPO --> PIN
+        UPDATE -->|"next task<br>in topo order"| PIN
+        UPDATE --> VALIDATE
+        VALIDATE --> METRICS
+    end
+
+    %% ─── OUTPUTS ───
+
+    subgraph OUTPUTS["📤 OUTPUTS"]
+        direction LR
+        SCHED["Updated Schedule<br>═══════════════<br>All tasks with<br>new startDate / endDate"]
+        CHANGES["Change Log<br>═══════════════<br>Per task:<br>• original dates<br>• new dates<br>• delta (how much)<br>• reason (why)"]
+        ERRORS["Errors / Warnings<br>═══════════════<br>• Circular deps<br>• Impossible schedules<br>• SLA breaches<br>  (missed T+N deadline)"]
+    end
+
+    subgraph CONSUMERS["👤 INTERNAL CONSUMERS"]
+        direction LR
+        OPS["🖥️ Operations Team<br>─────────────<br>Reviews new schedule<br>Acts on SLA breaches<br>Escalates if needed"]
+        COMP["📋 Compliance Team<br>─────────────<br>Verifies regulatory holds<br>were not moved<br>Reviews blackout adherence"]
+    end
+
+    %% ─── CONNECTIONS ───
+
+    SETUP --> DIS
+    TASKS --> ENGINE
+    CHANNELS --> ENGINE
+    ORDERS --> ENGINE
+    DIS -->|"updated snapshot"| ENGINE
+
+    ENGINE --> SCHED
+    ENGINE --> CHANGES
+    ENGINE --> ERRORS
+
+    SCHED --> OPS
+    CHANGES --> OPS
+    ERRORS --> OPS
+    CHANGES --> COMP
+    ERRORS --> COMP
+
+    %% ─── STYLES ───
+
+    classDef actorExt fill:#2d1b69,stroke:#8b5cf6,stroke-width:2px,color:#e0e0e0
+    classDef platform fill:#1a3a3a,stroke:#2dd4bf,stroke-width:2px,color:#e0e0e0
+    classDef input fill:#1a3a1a,stroke:#4ade80,stroke-width:2px,color:#e0e0e0
+    classDef output fill:#3a1a1a,stroke:#f87171,stroke-width:2px,color:#e0e0e0
+    classDef engine fill:#1a1a3a,stroke:#6c63ff,stroke-width:2px,color:#e0e0e0
+    classDef disruption fill:#4a2a0a,stroke:#fb923c,stroke-width:2px,color:#e0e0e0
+    classDef topo fill:#0a3a4a,stroke:#22d3ee,stroke-width:3px,color:#e0e0e0
+    classDef constraint fill:#3a2a1a,stroke:#fbbf24,stroke-width:2px,color:#e0e0e0
+    classDef pinned fill:#4a1a2a,stroke:#f472b6,stroke-width:2px,color:#e0e0e0
+    classDef batch fill:#2a1a3a,stroke:#c084fc,stroke-width:3px,color:#e0e0e0
+    classDef consumer fill:#1b4d69,stroke:#5cb8f6,stroke-width:2px,color:#e0e0e0
+
+    class CP,TD,REG actorExt
+    class DECOMP platform
+    class TASKS,CHANNELS,ORDERS input
+    class SCHED,CHANGES,ERRORS output
+    class DIS disruption
+    class TOPO topo
+    class C1,C2,C3,C4 constraint
+    class SKIP pinned
+    class BATCH batch
+    class OPS,COMP consumer

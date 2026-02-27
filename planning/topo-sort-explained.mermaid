@@ -1,0 +1,112 @@
+---
+title: "Topological Sort + Greedy Scheduling — How the Reflow Engine Orders Tasks"
+---
+
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#e0e0e0', 'primaryBorderColor': '#4a4a6a', 'lineColor': '#6c63ff', 'secondaryColor': '#16213e', 'tertiaryColor': '#0f3460', 'fontSize': '14px', 'fontFamily': 'monospace'}}}%%
+
+flowchart TB
+
+    subgraph CONTEXT["📋 THE PROBLEM — 3 tasks, 1 channel, all want 8:00 AM"]
+        direction LR
+        X["Task X<br>────────<br>duration: 60 min<br>startDate: 8:00 AM<br>depends on: nothing"]
+        Y["Task Y<br>────────<br>duration: 90 min<br>startDate: 8:00 AM<br>depends on: nothing"]
+        Z["Task Z<br>────────<br>duration: 60 min<br>startDate: 8:00 AM<br>depends on: Y"]
+        Y -.->|"must complete<br>before"| Z
+    end
+
+    subgraph STEP1["STEP 1 — Build DAG + Compute In-Degrees"]
+        direction TB
+        NOTE1["Each task = a node<br>Each dependency = a directed edge<br><br>In-degree = how many tasks<br>must finish before I can start"]
+        subgraph INDEGREE["In-Degree Table"]
+            direction LR
+            IX["X → in-degree: 0<br>(no deps = ROOT)"]
+            IY["Y → in-degree: 0<br>(no deps = ROOT)"]
+            IZ["Z → in-degree: 1<br>(waits for Y)"]
+        end
+        NOTE1 --> INDEGREE
+    end
+
+    subgraph STEP2["STEP 2 — Kahn's Algorithm: Find Processing Order"]
+        direction TB
+
+        subgraph ROUND1["Round 1: Enqueue all in-degree 0 tasks"]
+            direction TB
+            Q1["Queue: [ X, Y ]<br>────────────<br>Both are roots (in-degree 0)<br>Tie-break by startDate → both 8AM<br>→ fallback to input order: X first"]
+            PICK1["✅ Pick X from queue<br>Process X first"]
+            Q1 --> PICK1
+        end
+
+        subgraph ROUND2["Round 2: After processing X"]
+            direction TB
+            Q2["Queue: [ Y ]<br>────────────<br>X had no dependents to update<br>Y is still in queue"]
+            PICK2["✅ Pick Y from queue<br>Process Y second"]
+            Q2 --> PICK2
+        end
+
+        subgraph ROUND3["Round 3: After processing Y"]
+            direction TB
+            Q3["Y was processed → decrement<br>Z's in-degree: 1 → 0<br>────────────<br>Queue: [ Z ]<br>Z now eligible!"]
+            PICK3["✅ Pick Z from queue<br>Process Z third"]
+            Q3 --> PICK3
+        end
+
+        ROUND1 --> ROUND2 --> ROUND3
+    end
+
+    subgraph RESULT_TOPO["📐 TOPO SORT RESULT"]
+        TOPO_ORDER["Processing order: [ X, Y, Z ]<br>══════════════════════════<br>This ONLY determines the ORDER<br>we visit tasks. It does NOT<br>assign times yet."]
+    end
+
+    subgraph STEP3["STEP 3 — Greedy Scheduling (walk the topo order)"]
+        direction TB
+
+        NOTE3["For each task in order, compute:<br>═══════════════════════════<br>effectiveStart = max(<br>  task.startDate,<br>  latest dependency endDate,<br>  channel.nextAvailable<br>)<br>Then: endDate = effectiveStart + duration"]
+
+        subgraph SCHED_X["Scheduling X (first in order)"]
+            direction LR
+            SX["effectiveStart = max(<br>  8:00 AM, ← task wants 8AM<br>  N/A, ← no deps<br>  8:00 AM ← channel free<br>) = 8:00 AM<br>────────<br>endDate = 8:00 + 60min = 9:00 AM<br>channel.nextAvailable → 9:00 AM"]
+            TIMELINE_X["Channel timeline:<br>═══════════════<br>⬛⬛⬛ X ⬛⬛⬛<br>8:00 ──────── 9:00"]
+        end
+
+        subgraph SCHED_Y["Scheduling Y (second in order)"]
+            direction LR
+            SY["effectiveStart = max(<br>  8:00 AM, ← task wants 8AM<br>  N/A, ← no deps<br>  9:00 AM ← channel busy until 9!<br>) = 9:00 AM ← PUSHED<br>────────<br>endDate = 9:00 + 90min = 10:30 AM<br>channel.nextAvailable → 10:30 AM"]
+            TIMELINE_Y["Channel timeline:<br>═══════════════════════<br>⬛ X ⬛⬛ Y ⬛⬛⬛⬛<br>8:00 ── 9:00 ──────── 10:30"]
+        end
+
+        subgraph SCHED_Z["Scheduling Z (third in order)"]
+            direction LR
+            SZ["effectiveStart = max(<br>  8:00 AM, ← task wants 8AM<br>  10:30 AM, ← dep Y ends 10:30<br>  10:30 AM ← channel free at 10:30<br>) = 10:30 AM<br>────────<br>endDate = 10:30 + 60min = 11:30 AM<br>channel.nextAvailable → 11:30 AM"]
+            TIMELINE_Z["Channel timeline:<br>══════════════════════════════<br>⬛ X ⬛⬛ Y ⬛⬛⬛⬛⬛ Z ⬛⬛<br>8:00 ── 9:00 ──────── 10:30 ── 11:30"]
+        end
+
+        NOTE3 --> SCHED_X --> SCHED_Y --> SCHED_Z
+    end
+
+    subgraph KEY_INSIGHT["💡 KEY INSIGHT — Why greedy, not optimal?"]
+        direction TB
+        INSIGHT["The engine does NOT look ahead.<br>════════════════════════════════<br><br>A 'smart' scheduler might think:<br>'Y→Z is a chain, prioritize Y first<br>to minimize total delay.'<br><br>Our engine doesn't do that.<br>It processes in topo order with<br>startDate tie-breaking, and greedily<br>assigns each task the earliest slot.<br><br>No backtracking. No chain analysis.<br>No optimization for shortest total delay.<br><br>Trade-off:<br>✅ Simple, predictable, O(V+E)<br>✅ Always produces valid schedule<br>✅ Easy to explain WHY each task moved<br>❌ May not minimize total delay<br>❌ Tie-break order affects final schedule"]
+    end
+
+    CONTEXT --> STEP1
+    STEP1 --> STEP2
+    STEP2 --> RESULT_TOPO
+    RESULT_TOPO --> STEP3
+    STEP3 --> KEY_INSIGHT
+
+    classDef task fill:#1a3a1a,stroke:#4ade80,stroke-width:2px,color:#e0e0e0
+    classDef step fill:#1a1a3a,stroke:#6c63ff,stroke-width:2px,color:#e0e0e0
+    classDef queue fill:#2d1b69,stroke:#8b5cf6,stroke-width:2px,color:#e0e0e0
+    classDef pick fill:#0a3a4a,stroke:#22d3ee,stroke-width:2px,color:#e0e0e0
+    classDef sched fill:#3a2a1a,stroke:#fbbf24,stroke-width:2px,color:#e0e0e0
+    classDef timeline fill:#1a3a3a,stroke:#2dd4bf,stroke-width:2px,color:#e0e0e0
+    classDef insight fill:#4a2a0a,stroke:#fb923c,stroke-width:3px,color:#e0e0e0
+    classDef topo fill:#0a3a4a,stroke:#22d3ee,stroke-width:3px,color:#e0e0e0
+
+    class X,Y,Z task
+    class Q1,Q2,Q3 queue
+    class PICK1,PICK2,PICK3 pick
+    class SX,SY,SZ sched
+    class TIMELINE_X,TIMELINE_Y,TIMELINE_Z timeline
+    class INSIGHT insight
+    class TOPO_ORDER topo

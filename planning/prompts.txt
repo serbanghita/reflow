@@ -1,0 +1,6 @@
+1. what is a "settlement schedule reflow system", draw me a simple diagram
+2. is this for when I have a credit or a subscription to be payed and let's say the payment fails due to insufficient funds, and then the settlement is scheduled in the future and maybe broken down into multiple sums?
+3. make me a very brief explanation summary so I can put it into a markdown file section
+4. and a glossary of terms in markdown
+5. what are a list of typical constrains and dependencies in the case of settlement reschedule?
+6. make me a text/plain list of my prompts from this session
